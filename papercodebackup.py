@@ -4,11 +4,12 @@ import argparse
 import sys
 import subprocess
 from xml.sax.saxutils import escape
+import re
 
 VERSION="1.0.0.SNAPSHOT"
 
 SHORT_DESCRIPTION = """
-PaperCodeBackup v{}.
+code2fodt v{}.
 
 It prepares Git repository for printing
 with OpenOffice / LibreOffice.
@@ -21,12 +22,19 @@ to whatever you like.
 
 USAGE = """
 Example:
-  ./papercodebackup --title="MyProject" print_me.fodt
+  ./code2fodt --title="MyProject" print_me.fodt
 """
 
 def execute(cmd):
-    return subprocess.check_output(cmd, shell=True)
+    return subprocess.check_output(cmd, shell=True, universal_newlines=True)
 
+
+def repository_is_not_clean():
+    A_SIGNIFICANT_CHANGE_REGEX = re.compile('^\s*[MARCDU]')
+    git_status = execute('git status --porcelain=v1')
+    git_status = git_status.split('\n')
+    git_status = list(filter(lambda x: re.match(A_SIGNIFICANT_CHANGE_REGEX, x), git_status))
+    return len(git_status) > 0
 
 SUBTITLE = '<text:p text:style-name="Subtitle">{0}</text:p>\n'
 FILE_NAME_HEADER = '<text:h text:style-name="Heading_20_1" text:outline-level="1">{0}</text:h>\n'
@@ -37,6 +45,11 @@ HR = '<text:p text:style-name="Horizontal_20_Line"/>\n'
 
 
 if __name__ == "__main__":
+
+    if repository_is_not_clean():
+        print('ERROR: Unclean repository is not supported.', file=sys.stderr)
+        exit(1)
+
     parser = argparse.ArgumentParser(
         description=SHORT_DESCRIPTION.format(VERSION),
         epilog=USAGE,
@@ -76,10 +89,10 @@ if __name__ == "__main__":
         if namespace.short_description:
             namespace.out.write(SUBTITLE.format(escape(namespace.short_description)))
 
-        status = execute('git log -n 1')
-        status = status.split('\n')[:3]
+        git_head = execute('git log -n 1')
+        git_head = git_head.split('\n')[:3]
 
-        for line in status:
+        for line in git_head:
             namespace.out.write(CODE_LINE.format(escape(line)))
 
         namespace.out.write(HR)
