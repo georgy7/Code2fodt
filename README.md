@@ -14,6 +14,7 @@
 * Кодировка UTF-8 у всех текстовых файлов.
 * ПО:
   * Git
+  * File (реализация, поддерживающая `--mime-encoding`)
   * OpenOffice / LibreOffice
 * Надежный носитель. Например:
   * [Бескислотная бумага ♾](https://en.wikipedia.org/wiki/Acid-free_paper) из&nbsp;древесного сырья&nbsp;—

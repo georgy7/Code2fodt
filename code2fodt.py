@@ -81,12 +81,19 @@ def parse_arguments():
     return template, namespace
 
 
-def print_file(output_file, source_file_path):
-    # TODO
-    # check text or binary
-    # if binary, print size and md5
-    # else: print every line with line number
-    pass
+def is_binary(file_path):
+    r = execute('file --mime-encoding "{0}"'.format(file_path))
+    r = r.split(':')
+    return 'binary' in r[-1].lower()
+
+
+def print_file(output, source_file_path):
+    if is_binary(source_file_path):
+        # print size and md5
+        pass
+    else:
+        # print every line with line number
+        pass
 
 
 if __name__ == "__main__":
