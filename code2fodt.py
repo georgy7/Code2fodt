@@ -80,8 +80,12 @@ if __name__ == "__main__":
         print('ERROR: Unclean repositories are not supported.', file=sys.stderr)
         exit(1)
 
-    git_head = execute('git log -n 1')
-    git_head = git_head.split('\n')[:3]
+    git_abbreviated_commit_hash = execute('git show -s --format=%h')
+
+    git_head_xml = execute('git show -s --format="commit %H%n'
+                           'Author: %aN &lt;%aE&gt;%n'
+                           'Date:<text:s text:c=\\"3\\"/>%aI"')
+    git_head_xml = git_head_xml.split('\n')[:3]
 
     template, args = parse_arguments()
 
@@ -100,8 +104,8 @@ if __name__ == "__main__":
         if args.short_description:
             args.out.write(SUBTITLE.format(escape(args.short_description)))
 
-        for line in git_head:
-            args.out.write(CODE_LINE.format(escape(line)))
+        for line in git_head_xml:
+            args.out.write(CODE_LINE.format(line))
 
         args.out.write(HR)
 
