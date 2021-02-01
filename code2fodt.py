@@ -22,7 +22,7 @@ to whatever you like.
 
 USAGE = """
 Example:
-  ./code2fodt --title="MyProject" print_me.fodt
+  ./code2fodt.py --title="MyProject" print_me.fodt
 """
 
 def execute(cmd):
@@ -44,12 +44,7 @@ SPACES = '<text:s text:c="{0}"/>'
 HR = '<text:p text:style-name="Horizontal_20_Line"/>\n'
 
 
-if __name__ == "__main__":
-
-    if repository_is_not_clean():
-        print('ERROR: Unclean repository is not supported.', file=sys.stderr)
-        exit(1)
-
+def parse_arguments():
     parser = argparse.ArgumentParser(
         description=SHORT_DESCRIPTION.format(VERSION),
         epilog=USAGE,
@@ -67,12 +62,28 @@ if __name__ == "__main__":
                         type=argparse.FileType('r', encoding='UTF-8'),
                         help='A template in OpenDocument Flat XML Document Format.')
 
+    # TODO: tab size argument
+
     parser.add_argument('out', type=argparse.FileType('w', encoding='UTF-8'))
 
     namespace = parser.parse_args(sys.argv[1:])
 
     template = namespace.template.read()
     namespace.template.close()
+
+    return template, namespace
+
+
+if __name__ == "__main__":
+
+    if repository_is_not_clean():
+        print('ERROR: Unclean repositories are not supported.', file=sys.stderr)
+        exit(1)
+
+    git_head = execute('git log -n 1')
+    git_head = git_head.split('\n')[:3]
+
+    template, args = parse_arguments()
 
     TEMPLATE_SPLITTER = '</office:text>'
 
@@ -82,22 +93,19 @@ if __name__ == "__main__":
     template_end = '\n  ' + TEMPLATE_SPLITTER + template_end
 
     try:
-        template_start = template_start.replace('Project header', escape(namespace.title))
+        template_start = template_start.replace('Project header', escape(args.title))
 
-        namespace.out.write(template_start)
+        args.out.write(template_start)
 
-        if namespace.short_description:
-            namespace.out.write(SUBTITLE.format(escape(namespace.short_description)))
-
-        git_head = execute('git log -n 1')
-        git_head = git_head.split('\n')[:3]
+        if args.short_description:
+            args.out.write(SUBTITLE.format(escape(args.short_description)))
 
         for line in git_head:
-            namespace.out.write(CODE_LINE.format(escape(line)))
+            args.out.write(CODE_LINE.format(escape(line)))
 
-        namespace.out.write(HR)
+        args.out.write(HR)
 
-        namespace.out.write(template_end)
+        args.out.write(template_end)
     finally:
-        if not namespace.out.closed:
-            namespace.out.close()
+        if not args.out.closed:
+            args.out.close()
