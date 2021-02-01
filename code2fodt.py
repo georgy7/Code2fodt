@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 
-import argparse
-import sys
-import subprocess
-from xml.sax.saxutils import escape
-import re
+# To the extent possible under law, Georgy Ustinov has waived
+# all copyright and related or neighboring rights to code2fodt.
+#
+# This work is published from: Russian Federation.
+#
+# http://creativecommons.org/publicdomain/zero/1.0/
 
-VERSION="1.0.0.SNAPSHOT"
+import argparse
+import re
+import subprocess
+import sys
+from xml.sax.saxutils import escape
+
+VERSION = "1.0.0.SNAPSHOT"
 
 SHORT_DESCRIPTION = """
 code2fodt v{}.
@@ -15,15 +22,15 @@ It prepares Git repository for printing
 with OpenOffice / LibreOffice.
 
 I designed it for multi-column printing
-with very small font size. However,
-you can change the styles of the template
-to whatever you like.
+with very small font size. However, you may
+modify these templates or create your own.
 """
 
 USAGE = """
 Example:
   ./code2fodt.py --title="MyProject" print_me.fodt
 """
+
 
 def execute(cmd):
     return subprocess.check_output(cmd, shell=True, universal_newlines=True)
@@ -35,6 +42,7 @@ def repository_is_not_clean():
     git_status = git_status.split('\n')
     git_status = list(filter(lambda x: re.match(A_SIGNIFICANT_CHANGE_REGEX, x), git_status))
     return len(git_status) > 0
+
 
 SUBTITLE = '<text:p text:style-name="Subtitle">{0}</text:p>\n'
 FILE_NAME_HEADER = '<text:h text:style-name="Heading_20_1" text:outline-level="1">{0}</text:h>\n'
@@ -53,7 +61,6 @@ def parse_arguments():
 
     parser.add_argument('--title', required=True,
                         help='Document (project) title.')
-
 
     parser.add_argument('--short-description',
                         help='I do not recommend writing more than 255 characters here.')
@@ -74,14 +81,24 @@ def parse_arguments():
     return template, namespace
 
 
+def print_file(output_file, source_file_path):
+    # TODO
+    # check text or binary
+    # if binary, print size and md5
+    # else: print every line with line number
+    pass
+
+
 if __name__ == "__main__":
 
     if repository_is_not_clean():
         print('ERROR: Unclean repositories are not supported.', file=sys.stderr)
         exit(1)
 
+    # Для колонтитула.
     git_abbreviated_commit_hash = execute('git show -s --format=%h')
 
+    # Для первой страницы.
     git_head_xml = execute('git show -s --format="commit %H%n'
                            'Author: %aN &lt;%aE&gt;%n'
                            'Date:<text:s text:c=\\"3\\"/>%aI"')
@@ -108,6 +125,13 @@ if __name__ == "__main__":
             args.out.write(CODE_LINE.format(line))
 
         args.out.write(HR)
+
+        files = execute('git ls-files').split('\n')
+        # TODO change order
+
+        for file_path in files:
+            args.out.write(FILE_NAME_HEADER.format(file_path))
+            print_file(args.out, file_path)
 
         args.out.write(template_end)
     finally:
