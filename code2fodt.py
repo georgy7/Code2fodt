@@ -48,10 +48,8 @@ def repository_is_not_clean():
 
 SUBTITLE = '<text:p text:style-name="Subtitle">{0}</text:p>\n'
 FILE_NAME_HEADER = '<text:h text:style-name="Heading_20_1" text:outline-level="1">{0}</text:h>\n'
-EMPTY_CODE_LINE = '<text:p text:style-name="Standard"/>\n'
 CODE_LINE = '<text:p text:style-name="Standard">{0}</text:p>\n'
 SPACES = '<text:s text:c="{0}"/>'
-HR = '<text:p text:style-name="Horizontal_20_Line"/>\n'
 
 
 def parse_arguments():
@@ -83,10 +81,13 @@ def parse_arguments():
     return template, namespace
 
 
-def is_binary(file_path):
+def get_encoding_lowercase(file_path):
     r = execute('file --mime-encoding "{0}"'.format(file_path))
     r = r.split(':')
-    return 'binary' in r[-1].lower()
+    r = r[-1].lower().strip()
+    if r in ['unknown-8bit']:
+        return 'windows-1252'
+    return r
 
 
 def replace_tabs(s):
@@ -112,7 +113,13 @@ def format_line_number(line_number):
 
 
 def print_file(output, source_file_path):
-    if is_binary(source_file_path):
+    if os.path.islink(source_file_path):
+        target = os.readlink(source_file_path)
+        output.write(CODE_LINE.format('Link to ' + escape(target)))
+        return
+
+    file_encoding = get_encoding_lowercase(source_file_path)
+    if 'binary' in file_encoding:
         output.write(CODE_LINE.format('Binary file.'))
         size_bytes = os.path.getsize(source_file_path)
 
@@ -128,15 +135,25 @@ def print_file(output, source_file_path):
         output.write(CODE_LINE.format('Size: {0} bytes.'.format(size_bytes)))
         output.write(CODE_LINE.format('MD5:<text:s text:c="2"/>{0}.'.format(md5)))
     else:
-        with open(source_file_path, "r") as f:
-            line = f.readline()
-            line_number = 1
-            while line:
-                for l2 in line.split('\f'):
-                    numbered = format_line_number(line_number) + escape(l2)
-                    output.write(CODE_LINE.format(transform_spaces(numbered)))
-                    line_number += 1
+        line_number = 1
+        try:
+            with open(source_file_path, mode='r', encoding=file_encoding) as f:
                 line = f.readline()
+                while line:
+                    for l2 in line.split('\f'):
+                        raw = l2.rstrip()
+                        filtered = ''.join(filter(lambda x: x.isprintable(), list(raw)))
+                        numbered = format_line_number(line_number) + escape(filtered)
+                        output.write(CODE_LINE.format(transform_spaces(numbered)))
+                        line_number += 1
+                    line = f.readline()
+        except:
+            print(
+                'ERROR: Reading {0}. Line number: {1}.'.format(source_file_path, line_number),
+                file=sys.stderr
+            )
+            print("Unexpected error:", sys.exc_info()[0])
+            raise
 
 
 if __name__ == "__main__":

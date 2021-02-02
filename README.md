@@ -1,4 +1,4 @@
-#Code2fodt
+# Code2fodt
 
 Скрипт для компактного архивирования исходников
 в&nbsp;человекочитаемой форме
@@ -16,10 +16,23 @@
   * Git
   * File (реализация, поддерживающая `--mime-encoding`)
   * OpenOffice / LibreOffice
-  * Можно использовать AbiWord для распечатки больших документов (поддерживает ODT).
+  * Можно валидировать сгенерированный XML с&nbsp;помощью xmlstarlet:
+    ```
+    sudo apt-get install xmlstarlet
+    xmlstarlet val out.fodt
+    ```
+  * В случае, если файл не&nbsp;читается, можно найти конкретные ошибки в&nbsp;XML.
+    ```
+    sudo apt-get install libxml2-utils
+    xmllint out.fodt
+    ```
+  * Можно использовать AbiWord для распечатки больших документов,
+    с&nbsp;которыми OpenOffice не&nbsp;справляется.
+    Abiword поддерживает ODT. Вот так можно сконвертировать FODT в ODT:
     ```
     libreoffice --headless --convert-to odt out.fodt
     ```
+    Эта операция медленная и *очень* жадная до&nbsp;оперативной памяти.
 * Надежный носитель. Например:
   * [Бескислотная бумага ♾](https://en.wikipedia.org/wiki/Acid-free_paper) из&nbsp;древесного сырья&nbsp;—
   после полного намокания,
@@ -68,3 +81,11 @@
   * Например, дырокол и папка-регистратор или
   * Настоящий живой переплётчик (переплёт выглядит солидно,
   но если придется в будущем сканировать&nbsp;— это неудобно).
+
+
+## Насколько это компактно
+
+| Проект              | 2 колонки       | 3 колонки       |
+| ---------------     | --------------- | --------------- |
+| [Portable C Compiler](https://github.com/OrangeTide/pcc) |  | 137 страниц |
+| [Linux Kernel](https://github.com/torvalds/linux)    |  | ~  |
