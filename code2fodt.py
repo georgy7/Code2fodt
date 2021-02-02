@@ -8,6 +8,8 @@
 # http://creativecommons.org/publicdomain/zero/1.0/
 
 import argparse
+import hashlib
+import os
 import re
 import subprocess
 import sys
@@ -37,10 +39,10 @@ def execute(cmd):
 
 
 def repository_is_not_clean():
-    A_SIGNIFICANT_CHANGE_REGEX = re.compile('^\s*[MARCDU]')
+    A_SIGNIFICANT_CHANGE = re.compile('^\s*[MARCDU]')
     git_status = execute('git status --porcelain=v1')
     git_status = git_status.split('\n')
-    git_status = list(filter(lambda x: re.match(A_SIGNIFICANT_CHANGE_REGEX, x), git_status))
+    git_status = list(filter(lambda x: re.match(A_SIGNIFICANT_CHANGE, x), git_status))
     return len(git_status) > 0
 
 
@@ -65,7 +67,7 @@ def parse_arguments():
     parser.add_argument('--short-description',
                         help='I do not recommend writing more than 255 characters here.')
 
-    parser.add_argument('--template', default='template.fodt',
+    parser.add_argument('--template', default='template_A4_3c.fodt',
                         type=argparse.FileType('r', encoding='UTF-8'),
                         help='A template in OpenDocument Flat XML Document Format.')
 
@@ -87,13 +89,53 @@ def is_binary(file_path):
     return 'binary' in r[-1].lower()
 
 
+def replace_tabs(s):
+    # TODO
+    return s
+
+
+def transform_spaces(s):
+    r = replace_tabs(s)
+    for i in range(64, 1, -1):
+        r = r.replace(' ' * i, SPACES.format(i))
+    if r.startswith(' '):
+        r = SPACES.format(1) + r[1:]
+    return  r
+
+
+def format_line_number(line_number):
+    max_length = 4
+    s = str(line_number)
+    if len(s) > max_length:
+        s = '#' + s[-(max_length - 1):]
+    return s.rjust(max_length) + '   '
+
+
 def print_file(output, source_file_path):
     if is_binary(source_file_path):
-        # print size and md5
-        pass
+        output.write(CODE_LINE.format('Binary file.'))
+        size_bytes = os.path.getsize(source_file_path)
+
+        hash = hashlib.md5()
+        max_chunk_size = 8192
+        with open(source_file_path, "rb") as f:
+            chunk = f.read(max_chunk_size)
+            while chunk:
+                hash.update(chunk)
+                chunk = f.read(max_chunk_size)
+
+        md5 = hash.hexdigest()
+        output.write(CODE_LINE.format('Size: {0} bytes.'.format(size_bytes)))
+        output.write(CODE_LINE.format('MD5:<text:s text:c="2"/>{0}.'.format(md5)))
     else:
-        # print every line with line number
-        pass
+        with open(source_file_path, "r") as f:
+            line = f.readline()
+            line_number = 1
+            while line:
+                numbered = format_line_number(line_number) + escape(line)
+                output.write(CODE_LINE.format(transform_spaces(numbered)))
+                line = f.readline()
+                line_number += 1
 
 
 if __name__ == "__main__":
@@ -102,10 +144,10 @@ if __name__ == "__main__":
         print('ERROR: Unclean repositories are not supported.', file=sys.stderr)
         exit(1)
 
-    # Для колонтитула.
-    git_abbreviated_commit_hash = execute('git show -s --format=%h')
+    # For page headers.
+    git_commit_hash = execute('git show -s --format=%H')
 
-    # Для первой страницы.
+    # For the first page.
     git_head_xml = execute('git show -s --format="commit %H%n'
                            'Author: %aN &lt;%aE&gt;%n'
                            'Date:<text:s text:c=\\"3\\"/>%aI"')
@@ -122,6 +164,7 @@ if __name__ == "__main__":
 
     try:
         template_start = template_start.replace('Project header', escape(args.title))
+        template_start = template_start.replace('CommitHashCode', git_commit_hash)
 
         args.out.write(template_start)
 
@@ -131,9 +174,7 @@ if __name__ == "__main__":
         for line in git_head_xml:
             args.out.write(CODE_LINE.format(line))
 
-        args.out.write(HR)
-
-        files = execute('git ls-files').split('\n')
+        files = execute('git ls-files').rstrip().split('\n')
         # TODO change order
 
         for file_path in files:

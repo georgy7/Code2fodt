@@ -163,8 +163,10 @@
    <style:table-row-properties fo:keep-together="auto"/>
   </style:default-style>
   <style:style style:name="Standard" style:family="paragraph" style:class="text" style:master-page-name="">
-   <style:paragraph-properties style:page-number="auto"/>
-   <style:text-properties style:font-name="DejaVu Sans Mono" fo:font-family="&apos;DejaVu Sans Mono&apos;" style:font-style-name="Book" style:font-family-generic="modern" style:font-pitch="fixed" fo:font-size="2pt"/>
+   <style:paragraph-properties fo:margin-left="0.3cm" fo:margin-right="0cm" fo:text-indent="-0.3cm" style:auto-text-indent="false" style:page-number="auto">
+    <style:tab-stops/>
+   </style:paragraph-properties>
+   <style:text-properties style:font-name="DejaVu Sans Mono1" fo:font-family="&apos;DejaVu Sans Mono&apos;" style:font-style-name="Book" style:font-family-generic="modern" style:font-pitch="fixed" fo:font-size="2pt"/>
   </style:style>
   <style:style style:name="Heading" style:family="paragraph" style:parent-style-name="Standard" style:next-style-name="Text_20_body" style:class="text">
    <style:paragraph-properties fo:margin-top="0.423cm" fo:margin-bottom="0.212cm" loext:contextual-spacing="false" fo:keep-with-next="always"/>
@@ -206,7 +208,7 @@
   </style:style>
   <style:style style:name="Table_20_Contents" style:display-name="Table Contents" style:family="paragraph" style:parent-style-name="Standard" style:class="extra">
    <style:paragraph-properties text:number-lines="false" text:line-number="0"/>
-   <style:text-properties style:font-name="DejaVu Sans" fo:font-family="&apos;DejaVu Sans&apos;" style:font-style-name="Book" style:font-family-generic="swiss" style:font-pitch="variable" fo:font-size="4pt"/>
+   <style:text-properties style:font-name="DejaVu Sans Mono" fo:font-family="&apos;DejaVu Sans Mono&apos;" style:font-style-name="Book" style:font-family-generic="modern" style:font-pitch="fixed" fo:font-size="4pt"/>
   </style:style>
   <style:style style:name="Subtitle" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:class="chapter" style:master-page-name="">
    <loext:graphic-properties draw:fill="none" draw:fill-color="#eeeeee"/>
@@ -345,10 +347,10 @@
      <table:table-column table:style-name="Table2.B"/>
      <table:table-row>
       <table:table-cell table:style-name="Table2.A1" office:value-type="string">
-       <text:p text:style-name="Table_20_Contents"><text:title>Project header</text:title></text:p>
+       <text:p text:style-name="Table_20_Contents"><text:title>Project header</text:title><text:s text:c="4"/>CommitHashCode</text:p>
       </table:table-cell>
       <table:table-cell table:style-name="Table2.A1" office:value-type="string">
-       <text:p text:style-name="P4"><text:span text:style-name="T1">Page: </text:span><text:page-number text:select-page="current">0</text:page-number></text:p>
+       <text:p text:style-name="P4"><text:span text:style-name="T1">Page </text:span><text:page-number text:select-page="current">0</text:page-number></text:p>
       </table:table-cell>
      </table:table-row>
     </table:table>
