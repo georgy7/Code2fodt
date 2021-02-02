@@ -16,6 +16,10 @@
   * Git
   * File (реализация, поддерживающая `--mime-encoding`)
   * OpenOffice / LibreOffice
+  * Можно использовать AbiWord для распечатки больших документов (поддерживает ODT).
+    ```
+    libreoffice --headless --convert-to odt out.fodt
+    ```
 * Надежный носитель. Например:
   * [Бескислотная бумага ♾](https://en.wikipedia.org/wiki/Acid-free_paper) из&nbsp;древесного сырья&nbsp;—
   после полного намокания,

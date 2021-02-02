@@ -90,8 +90,8 @@ def is_binary(file_path):
 
 
 def replace_tabs(s):
-    # TODO
-    return s
+    # TODO переделать
+    return s.replace("\t", ' ')
 
 
 def transform_spaces(s):
@@ -100,7 +100,7 @@ def transform_spaces(s):
         r = r.replace(' ' * i, SPACES.format(i))
     if r.startswith(' '):
         r = SPACES.format(1) + r[1:]
-    return  r
+    return r
 
 
 def format_line_number(line_number):
@@ -132,10 +132,11 @@ def print_file(output, source_file_path):
             line = f.readline()
             line_number = 1
             while line:
-                numbered = format_line_number(line_number) + escape(line)
-                output.write(CODE_LINE.format(transform_spaces(numbered)))
+                for l2 in line.split('\f'):
+                    numbered = format_line_number(line_number) + escape(l2)
+                    output.write(CODE_LINE.format(transform_spaces(numbered)))
+                    line_number += 1
                 line = f.readline()
-                line_number += 1
 
 
 if __name__ == "__main__":
@@ -178,7 +179,7 @@ if __name__ == "__main__":
         # TODO change order
 
         for file_path in files:
-            args.out.write(FILE_NAME_HEADER.format(file_path))
+            args.out.write(FILE_NAME_HEADER.format(escape(file_path)))
             print_file(args.out, file_path)
 
         args.out.write(template_end)
