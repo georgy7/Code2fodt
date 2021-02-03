@@ -70,7 +70,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description=SHORT_DESCRIPTION.format(VERSION),
         epilog=USAGE,
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
     parser.add_argument('--title', required=True,
