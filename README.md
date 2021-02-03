@@ -32,7 +32,11 @@
     ```
     libreoffice --headless --convert-to odt out.fodt
     ```
-    Эта операция медленная и *очень* жадная до&nbsp;оперативной памяти.
+    Эта операция медленная и&nbsp;жадная до&nbsp;оперативной памяти.
+    Также, распечатка из&nbsp;AbiWord может ухудшать форматирование.
+    Чтобы распечатывать напрямую из&nbsp;OpenOffice, можно
+    разбить вывод на&nbsp;большее количество частей параметром `--part-loc-threshold`
+    (число строк в&nbsp;одной части).
 * Надежный носитель. Например:
   * [Бескислотная бумага ♾](https://en.wikipedia.org/wiki/Acid-free_paper) из&nbsp;древесного сырья&nbsp;—
   после полного намокания,
@@ -88,4 +92,4 @@
 | Проект              | 2 колонки       | 3 колонки       |
 | ---------------     | --------------- | --------------- |
 | [Portable C Compiler](https://github.com/OrangeTide/pcc) |  | 137 страниц |
-| [Linux Kernel](https://github.com/torvalds/linux)    |  | ~  |
+| [Linux Kernel](https://github.com/torvalds/linux)    |  | ~33 тысячи страниц  |

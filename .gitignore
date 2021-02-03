@@ -3,3 +3,8 @@
 output.fodt
 print_me.fodt
 *.odt
+
+*.part[0-9].fodt
+*.part[0-9][0-9].fodt
+*.part[0-9][0-9][0-9].fodt
+*.part[0-9][0-9][0-9][0-9].fodt

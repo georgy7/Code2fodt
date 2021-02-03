@@ -46,10 +46,24 @@ def repository_is_not_clean():
     return len(git_status) > 0
 
 
+TITLE_INNER = 'Project header'
+TITLE = '<text:p text:style-name="Title"><text:title>{0}</text:title></text:p>'
 SUBTITLE = '<text:p text:style-name="Subtitle">{0}</text:p>\n'
 FILE_NAME_HEADER = '<text:h text:style-name="Heading_20_1" text:outline-level="1">{0}</text:h>\n'
 CODE_LINE = '<text:p text:style-name="Standard">{0}</text:p>\n'
 SPACES = '<text:s text:c="{0}"/>'
+
+
+def natural_argument(arg):
+    try:
+        i = int(arg)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e))
+
+    if i < 1:
+        raise argparse.ArgumentTypeError("Must be greater than or equal 1.")
+
+    return i
 
 
 def parse_arguments():
@@ -69,9 +83,15 @@ def parse_arguments():
                         type=argparse.FileType('r', encoding='UTF-8'),
                         help='A template in OpenDocument Flat XML Document Format.')
 
+    parser.add_argument('--part-loc-threshold', type=natural_argument, default=1000000,
+                        help='After this number of lines, '
+                             'the next source file will start a new FODT file.'
+                             'Please, set it to 100000 or less to print directly '
+                             'from OpenOffice.')
+
     # TODO: tab size argument
 
-    parser.add_argument('out', type=argparse.FileType('w', encoding='UTF-8'))
+    parser.add_argument('out')
 
     namespace = parser.parse_args(sys.argv[1:])
 
@@ -116,7 +136,7 @@ def print_file(output, source_file_path):
     if os.path.islink(source_file_path):
         target = os.readlink(source_file_path)
         output.write(CODE_LINE.format('Link to ' + escape(target)))
-        return
+        return 1
 
     file_encoding = get_encoding_lowercase(source_file_path)
     if 'binary' in file_encoding:
@@ -134,6 +154,7 @@ def print_file(output, source_file_path):
         md5 = hash.hexdigest()
         output.write(CODE_LINE.format('Size: {0} bytes.'.format(size_bytes)))
         output.write(CODE_LINE.format('MD5:<text:s text:c="2"/>{0}.'.format(md5)))
+        return 3
     else:
         line_number = 1
         try:
@@ -154,6 +175,7 @@ def print_file(output, source_file_path):
             )
             print("Unexpected error:", sys.exc_info()[0])
             raise
+        return line_number
 
 
 if __name__ == "__main__":
@@ -175,31 +197,60 @@ if __name__ == "__main__":
 
     TEMPLATE_SPLITTER = '</office:text>'
 
-    template_start, template_end = template.split(TEMPLATE_SPLITTER)
+    template_start_template, template_end = template.split(TEMPLATE_SPLITTER)
 
-    template_start = template_start.rstrip() + '\n\n'
+    template_start_template = template_start_template.rstrip() + '\n\n'
     template_end = '\n  ' + TEMPLATE_SPLITTER + template_end
 
-    try:
-        template_start = template_start.replace('Project header', escape(args.title))
-        template_start = template_start.replace('CommitHashCode', git_commit_hash)
+    files = execute('git ls-files').rstrip().split('\n')
+    # TODO change order
 
-        args.out.write(template_start)
+    file_index = 0
+    part_number = 1
 
-        if args.short_description:
-            args.out.write(SUBTITLE.format(escape(args.short_description)))
+    while file_index < len(files):
 
-        for line in git_head_xml:
-            args.out.write(CODE_LINE.format(line))
+        part_loc_counter = 0
 
-        files = execute('git ls-files').rstrip().split('\n')
-        # TODO change order
+        if 1 == part_number:
+            output_file_path = args.out
+        else:
+            output_file_path = args.out + '.part' + str(part_number) + '.fodt'
 
-        for file_path in files:
-            args.out.write(FILE_NAME_HEADER.format(escape(file_path)))
-            print_file(args.out, file_path)
+        with open(output_file_path, mode='w', encoding='UTF-8') as out:
 
-        args.out.write(template_end)
-    finally:
-        if not args.out.closed:
-            args.out.close()
+            template_start = template_start_template
+
+            escaped_title = escape(args.title)
+            template_start = template_start.replace(TITLE_INNER, escaped_title)
+
+            template_start = template_start.replace('CommitHashCode', git_commit_hash)
+
+            if 1 == part_number:
+                part_label = ''
+            else:
+                part_label = 'Part {0}'.format(part_number)
+
+            template_start = template_start.replace('PartX', part_label)
+
+            out.write(template_start)
+
+            if 1 == part_number:
+                out.write(TITLE.format(escaped_title))
+
+                if args.short_description:
+                    out.write(SUBTITLE.format(escape(args.short_description)))
+
+                for line in git_head_xml:
+                    out.write(CODE_LINE.format(line))
+
+            while (file_index < len(files)) and (part_loc_counter < args.part_loc_threshold):
+                file_path = files[file_index]
+                file_index += 1
+
+                out.write(FILE_NAME_HEADER.format(escape(file_path)))
+                part_loc_counter += print_file(out, file_path)
+
+            out.write(template_end)
+
+        part_number += 1
