@@ -7,7 +7,16 @@
 #
 # http://creativecommons.org/publicdomain/zero/1.0/
 
+# ----------
+# Affirmer offers the Work as-is and makes no representations or warranties
+# of any kind concerning the Work, express, implied, statutory or otherwise,
+# including without limitation warranties of title, merchantability, fitness
+# for a particular purpose, non infringement, or the absence of latent
+# or other defects, accuracy, or the present or absence of errors, whether
+# or not discoverable, all to the greatest extent permissible under applicable law.
+
 import argparse
+import encodings
 import hashlib
 import os
 import re
@@ -46,11 +55,18 @@ def repository_is_not_clean():
     return len(git_status) > 0
 
 
+ERROR_LIMIT_PER_FILE = 5
+
+DEFAULT_EXTENSION = '.fodt'
+
 TITLE_INNER = 'Project header'
 TITLE = '<text:p text:style-name="Title"><text:title>{0}</text:title></text:p>'
 SUBTITLE = '<text:p text:style-name="Subtitle">{0}</text:p>\n'
 FILE_NAME_HEADER = '<text:h text:style-name="Heading_20_1" text:outline-level="1">{0}</text:h>\n'
+
+EMPTY_CODE_LINE = '<text:p text:style-name="Standard"/>\n'
 CODE_LINE = '<text:p text:style-name="Standard">{0}</text:p>\n'
+
 SPACES = '<text:s text:c="{0}"/>'
 
 
@@ -66,6 +82,12 @@ def natural_argument(arg):
     return i
 
 
+def output_argument(arg):
+    if not arg.endswith(DEFAULT_EXTENSION):
+        raise argparse.ArgumentTypeError("Output filename must have extension fodt.")
+    return arg
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description=SHORT_DESCRIPTION.format(VERSION),
@@ -76,22 +98,26 @@ def parse_arguments():
     parser.add_argument('--title', required=True,
                         help='Document (project) title.')
 
-    parser.add_argument('--short-description',
+    parser.add_argument('-d', '--short-description',
                         help='I do not recommend writing more than 255 characters here.')
 
     parser.add_argument('--template', default='template_A4_3c.fodt',
                         type=argparse.FileType('r', encoding='UTF-8'),
                         help='A template in OpenDocument Flat XML Document Format.')
 
-    parser.add_argument('--part-loc-threshold', type=natural_argument, default=1000000,
+    parser.add_argument('-v', '--volume-loc-threshold', type=natural_argument,
+                        default=500000,
                         help='After this number of lines, '
-                             'the next source file will start a new FODT file.'
+                             'the next source file will start a new FODT file. '
                              'Please, set it to 100000 or less to print directly '
                              'from OpenOffice.')
 
     # TODO: tab size argument
 
-    parser.add_argument('out')
+    parser.add_argument('--print-binary', action='store_true',
+                        help='Print binary files as Base64.')
+
+    parser.add_argument('out', type=output_argument)
 
     namespace = parser.parse_args(sys.argv[1:])
 
@@ -101,13 +127,64 @@ def parse_arguments():
     return template, namespace
 
 
+def get_raw_list_of_encoding_aliases():
+    result = set()
+    filtered = filter(
+        lambda kv: not kv[1].endswith('_codec'),
+        encodings.aliases.aliases.items()
+    )
+
+    flat_array = ['cp720', 'cp737', 'cp856', 'cp874', 'cp875', 'cp1006', 'koi8_u', 'utf_8_sig']
+    for k, v in filtered:
+        flat_array.append(k)
+        flat_array.append(v)
+
+    for x in flat_array:
+        result.add(x.lower())
+        result.add(x.lower().replace('_', '-'))
+
+    result = list(filter(lambda x: not x.isnumeric(), result))
+    return result
+
+
+ENCODING_ALIASES = get_raw_list_of_encoding_aliases()
+ENCODING_ALIASES_UNAMBIGUOUS = list(filter(lambda x: len(x) >= 5, ENCODING_ALIASES))
+ENCODING_ALIASES_A_LITTLE_AMBIGUOUS = list(filter(lambda x: len(x) >= 3, ENCODING_ALIASES))
+
+
+def get_fn_parts(file_path):
+    # Filenames may contain encoding name.
+    # For instance: freebsd-src/contrib/bc/locales/*
+    fn = os.path.basename(file_path)
+    without_extension = os.path.splitext(fn)[0]
+    fn_parts = without_extension.split('.')
+    return list(map(lambda x: x.lower(), fn_parts))
+
+
 def get_encoding_lowercase(file_path):
+    fn_parts = get_fn_parts(file_path)
+    for i in range(1, len(fn_parts)):
+        part = fn_parts[i]
+        if part in ENCODING_ALIASES_UNAMBIGUOUS:
+            return part
     r = execute('file --mime-encoding "{0}"'.format(file_path))
     r = r.split(':')
     r = r[-1].lower().strip()
-    if r in ['unknown-8bit']:
-        return 'windows-1252'
     return r
+
+
+def reinterpret_encoding(raw_encoding, file_path):
+    if raw_encoding in ['unknown-8bit', 'us-ascii', 'iso-8859-1']:
+        fn_parts = get_fn_parts(file_path)
+        for i in range(1, len(fn_parts)):
+            part = fn_parts[i]
+            if part in ENCODING_ALIASES_A_LITTLE_AMBIGUOUS:
+                return part
+        # Most widely used single-byte character set.
+        return 'windows-1252'
+    elif raw_encoding == 'ebcdic':
+        return 'cp500'
+    return raw_encoding
 
 
 def replace_tabs(s):
@@ -138,8 +215,10 @@ def print_file(output, source_file_path):
         output.write(CODE_LINE.format('Link to ' + escape(target)))
         return 1
 
-    file_encoding = get_encoding_lowercase(source_file_path)
-    if 'binary' in file_encoding:
+    encoding_detected = get_encoding_lowercase(source_file_path)
+    encoding_interpreted = reinterpret_encoding(encoding_detected, source_file_path)
+
+    if 'binary' in encoding_detected:
         output.write(CODE_LINE.format('Binary file.'))
         size_bytes = os.path.getsize(source_file_path)
 
@@ -157,25 +236,64 @@ def print_file(output, source_file_path):
         return 3
     else:
         line_number = 1
+        meta_lines = 0
+
+        if encoding_detected == encoding_interpreted:
+            output.write(CODE_LINE.format('Encoding: {0}.'.format(encoding_detected)))
+            meta_lines += 1
+        else:
+            output.write(CODE_LINE.format('Encoding detected: {0}. Interpreted as: {1}.'
+                                          .format(encoding_detected, encoding_interpreted)))
+            meta_lines += 1
+            if not ((encoding_detected in ['us-ascii', 'iso-8859-1'])
+                    and ('windows-1252' == encoding_interpreted)):
+                print(
+                    'Interpreting {0} as {1}. File: {2}'.format(
+                        encoding_detected,
+                        encoding_interpreted,
+                        source_file_path),
+                    file=sys.stderr)
+
+        output.write(EMPTY_CODE_LINE)
+        meta_lines += 1
+
         try:
-            with open(source_file_path, mode='r', encoding=file_encoding) as f:
+            ERROR_REPLACEMENT_CHARACTER = '\ufffd'
+            with open(source_file_path, mode='r', encoding=encoding_interpreted, errors='replace') as f:
+                errors_in_the_file = 0
                 line = f.readline()
                 while line:
                     for l2 in line.split('\f'):
                         raw = l2.rstrip()
+
+                        error_count = raw.count(ERROR_REPLACEMENT_CHARACTER)
+                        if error_count > 0:
+                            print(
+                                'Could not read {0} character(s): {1}:{2}.'.format(
+                                    error_count,
+                                    source_file_path,
+                                    line_number),
+                                file=sys.stderr
+                            )
+
+                        errors_in_the_file += error_count
+                        if errors_in_the_file > ERROR_LIMIT_PER_FILE:
+                            print('Replacements per file limit exceeded.', file=sys.stderr)
+                            exit(1)
+
                         filtered = ''.join(filter(lambda x: x.isprintable(), list(raw)))
                         numbered = format_line_number(line_number) + escape(filtered)
                         output.write(CODE_LINE.format(transform_spaces(numbered)))
                         line_number += 1
                     line = f.readline()
         except:
+            print("Unexpected error:", sys.exc_info()[0], file=sys.stderr)
             print(
-                'ERROR: Reading {0}. Line number: {1}.'.format(source_file_path, line_number),
+                'At reading {0}. Line number: {1}.'.format(source_file_path, line_number),
                 file=sys.stderr
             )
-            print("Unexpected error:", sys.exc_info()[0])
             raise
-        return line_number
+        return meta_lines + line_number
 
 
 if __name__ == "__main__":
@@ -206,16 +324,19 @@ if __name__ == "__main__":
     # TODO change order
 
     file_index = 0
-    part_number = 1
+    volume_number = 1
 
     while file_index < len(files):
 
-        part_loc_counter = 0
+        print('Volume {0}.'.format(volume_number), file=sys.stderr)
 
-        if 1 == part_number:
+        volume_loc_counter = 0
+
+        if 1 == volume_number:
             output_file_path = args.out
         else:
-            output_file_path = args.out + '.part' + str(part_number) + '.fodt'
+            output_file_path = (args.out)[:-len(DEFAULT_EXTENSION)] + \
+                               '.volume' + str(volume_number) + '.fodt'
 
         with open(output_file_path, mode='w', encoding='UTF-8') as out:
 
@@ -226,16 +347,16 @@ if __name__ == "__main__":
 
             template_start = template_start.replace('CommitHashCode', git_commit_hash)
 
-            if 1 == part_number:
-                part_label = ''
+            if 1 == volume_number:
+                volume_label = ''
             else:
-                part_label = 'Part {0}'.format(part_number)
+                volume_label = 'Volume {0}'.format(volume_number)
 
-            template_start = template_start.replace('PartX', part_label)
+            template_start = template_start.replace('PartX', volume_label)
 
             out.write(template_start)
 
-            if 1 == part_number:
+            if 1 == volume_number:
                 out.write(TITLE.format(escaped_title))
 
                 if args.short_description:
@@ -244,13 +365,13 @@ if __name__ == "__main__":
                 for line in git_head_xml:
                     out.write(CODE_LINE.format(line))
 
-            while (file_index < len(files)) and (part_loc_counter < args.part_loc_threshold):
+            while (file_index < len(files)) and (volume_loc_counter < args.volume_loc_threshold):
                 file_path = files[file_index]
                 file_index += 1
 
                 out.write(FILE_NAME_HEADER.format(escape(file_path)))
-                part_loc_counter += print_file(out, file_path)
+                volume_loc_counter += print_file(out, file_path)
 
             out.write(template_end)
 
-        part_number += 1
+        volume_number += 1

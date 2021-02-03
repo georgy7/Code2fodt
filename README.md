@@ -11,7 +11,7 @@
 * Git-репозиторий.
   * Программа печатает только tracked файлы.
   * У&nbsp;бинарных файлов печатается только размер в&nbsp;байтах и&nbsp;MD5.
-* Кодировка UTF-8 у всех текстовых файлов.
+* Только кодировка UTF-8 поддерживается, хотя другие кодировки иногда тоже могут распечататься правильно.
 * ПО:
   * Git
   * File (реализация, поддерживающая `--mime-encoding`)
@@ -92,4 +92,5 @@
 | Проект              | 2 колонки       | 3 колонки       |
 | ---------------     | --------------- | --------------- |
 | [Portable C Compiler](https://github.com/OrangeTide/pcc) |  | 137 страниц |
-| [Linux Kernel](https://github.com/torvalds/linux)    |  | ~33 тысячи страниц  |
+| [Linux Kernel](https://github.com/torvalds/linux)        |  | ~33 тысячи страниц  |
+| [FreeBSD](https://github.com/freebsd/freebsd-src.git)    |  |  |
