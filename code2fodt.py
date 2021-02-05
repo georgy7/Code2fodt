@@ -82,6 +82,20 @@ def natural_argument(arg):
     return i
 
 
+def tab_size_argument(arg):
+    try:
+        i = int(arg)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e))
+
+    if i < 0:
+        raise argparse.ArgumentTypeError("Tab must be greater than or equal 0.")
+    elif i > 8:
+        raise argparse.ArgumentTypeError("Tab must be less than or equal 8.")
+
+    return i
+
+
 def output_argument(arg):
     if not arg.endswith(DEFAULT_EXTENSION):
         raise argparse.ArgumentTypeError("Output filename must have extension fodt.")
@@ -99,7 +113,7 @@ def parse_arguments():
                         help='Document (project) title.')
 
     parser.add_argument('-d', '--short-description',
-                        help='I do not recommend writing more than 255 characters here.')
+                        help='I do not recommend more than 500 characters here.')
 
     parser.add_argument('--template', default='template_A4_3c.fodt',
                         type=argparse.FileType('r', encoding='UTF-8'),
@@ -112,7 +126,8 @@ def parse_arguments():
                              'Please, set it to 100000 or less to print directly '
                              'from OpenOffice.')
 
-    # TODO: tab size argument
+    parser.add_argument('--tab-size', type=tab_size_argument,
+                        default=8, help='Tab size.')
 
     parser.add_argument('--print-binary', action='store_true',
                         help='Print binary files as Base64.')
@@ -187,13 +202,19 @@ def reinterpret_encoding(raw_encoding, file_path):
     return raw_encoding
 
 
-def replace_tabs(s):
-    # TODO переделать
-    return s.replace("\t", ' ')
+def replace_tabs(s, tab_size):
+    result = ''
+    for i in range(len(s)):
+        if '\t' == s[i]:
+            modulo = len(result) % tab_size
+            result += ' ' * (tab_size - modulo)
+        else:
+            result += s[i]
+    return result
 
 
 def transform_spaces(s):
-    r = replace_tabs(s)
+    r = s
     for i in range(64, 1, -1):
         r = r.replace(' ' * i, SPACES.format(i))
     if r.startswith(' '):
@@ -209,7 +230,7 @@ def format_line_number(line_number):
     return s.rjust(max_length) + '   '
 
 
-def print_file(output, source_file_path):
+def print_file(output, source_file_path, tab_size):
     if os.path.islink(source_file_path):
         target = os.readlink(source_file_path)
         output.write(CODE_LINE.format('Link to ' + escape(target)))
@@ -281,6 +302,7 @@ def print_file(output, source_file_path):
                             print('Replacements per file limit exceeded.', file=sys.stderr)
                             exit(1)
 
+                        raw = replace_tabs(raw, tab_size)
                         filtered = ''.join(filter(lambda x: x.isprintable(), list(raw)))
                         numbered = format_line_number(line_number) + escape(filtered)
                         output.write(CODE_LINE.format(transform_spaces(numbered)))
@@ -370,7 +392,7 @@ if __name__ == "__main__":
                 file_index += 1
 
                 out.write(FILE_NAME_HEADER.format(escape(file_path)))
-                volume_loc_counter += print_file(out, file_path)
+                volume_loc_counter += print_file(out, file_path, args.tab_size)
 
             out.write(template_end)
 
