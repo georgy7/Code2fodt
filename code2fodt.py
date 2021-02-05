@@ -318,6 +318,25 @@ def print_file(output, source_file_path, tab_size):
         return meta_lines + line_number
 
 
+
+def file_path_sort_key(x):
+    parts = re.split('[/\\\\]', x.lstrip('/\\'))
+
+    # Space is the smallest real Unicode character, I suppose.
+    # So, files will be on the top with this manipulation.
+    parts[-1] = ' ' + parts[-1]
+
+    # Just in case, some folder name starts with space.
+    for i in range(len(parts) - 1):
+        parts[i] = 'z' + parts[i]
+
+    return parts
+
+
+def sort_files_before_folders(input):
+    return sorted(input, key=file_path_sort_key)
+
+
 if __name__ == "__main__":
 
     if repository_is_not_clean():
@@ -343,7 +362,7 @@ if __name__ == "__main__":
     template_end = '\n  ' + TEMPLATE_SPLITTER + template_end
 
     files = execute('git ls-files').rstrip().split('\n')
-    # TODO change order
+    files = sort_files_before_folders(files)
 
     file_index = 0
     volume_number = 1
