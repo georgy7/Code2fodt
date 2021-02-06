@@ -129,8 +129,9 @@ def parse_arguments():
     parser.add_argument('--tab-size', type=tab_size_argument,
                         default=8, help='Tab size.')
 
-    parser.add_argument('--print-binary', action='store_true',
-                        help='Print binary files as Base64.')
+    # TODO
+    # parser.add_argument('--print-binary', action='store_true',
+    #                     help='Print binary files as hex code.')
 
     parser.add_argument('out', type=output_argument)
 

@@ -120,8 +120,9 @@
 
 ## Насколько это компактно
 
-| Проект              | 2 колонки       | 3 колонки       |
-| ---------------     | --------------- | --------------- |
-| [Portable C Compiler](https://github.com/OrangeTide/pcc) |  | 137 страниц |
-| [Ядро Linux](https://github.com/torvalds/linux)        |  | ~33 тысячи страниц  |
-| [FreeBSD](https://github.com/freebsd/freebsd-src.git)    |  | ~40 тысяч страниц |
+| Проект                                            | 2 колонки  | 3 колонки     | 6 колонок     |
+| ---------------                                   | ---------- | ------------- | ------------- |
+| Минимальное разрешение                                   |     | 1200 dpi      | 2400 dpi (?)  |
+| [Portable C Compiler](https://github.com/OrangeTide/pcc) |     | 138 страниц   | 33 страницы   |
+| [Ядро Linux](https://github.com/torvalds/linux)          |     | ~33000 стр.   | ~8000 стр.    |
+| [FreeBSD](https://github.com/freebsd/freebsd-src.git)    |     | ~36000 стр.   | ~8500 стр.    |
