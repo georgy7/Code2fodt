@@ -24,13 +24,11 @@ import subprocess
 import sys
 from xml.sax.saxutils import escape
 
-VERSION = "1.0.0.SNAPSHOT"
-
 SHORT_DESCRIPTION = """
-code2fodt v{}.
+Code2fodt.
 
 It prepares Git repository for printing
-with OpenOffice / LibreOffice.
+with OpenOffice/LibreOffice/AbiWord.
 
 I designed it for multi-column printing
 with very small font size. However, you may
@@ -104,7 +102,7 @@ def output_argument(arg):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
-        description=SHORT_DESCRIPTION.format(VERSION),
+        description=SHORT_DESCRIPTION,
         epilog=USAGE,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
