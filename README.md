@@ -16,6 +16,17 @@
   * Git
   * File (реализация, поддерживающая `--mime-encoding`)
   * OpenOffice / LibreOffice
+  * Шрифты:
+    * DejaVu (Sans Mono, Sans)
+    * Noto CJK (Noto Sans Mono CJK SC, Noto Sans CJK SC)
+      * Ubuntu: `sudo apt-get install fonts-noto-cjk`
+      * [Скачать для Windows / macOS](https://www.google.com/get/noto/help/install/)<br/>
+        В&nbsp;разных редакторах и&nbsp;платформах шрифты могут работать по-разному!<br/>
+        См. файл `test_unicode.fodt`<br/>
+        Также, у&nbsp;меня нет уверенности, как это всё будет работать при появлении
+        в&nbsp;коде языков с&nbsp;направлением письма справа налево.
+    * Lohit Devanagari
+      * Ubuntu: `sudo apt-get install fonts-lohit-deva`
   * В случае возникновения проблем:
     * Можно валидировать сгенерированный XML с&nbsp;помощью xmlstarlet:
       ```
@@ -127,4 +138,4 @@
 | [Ядро Linux](https://github.com/torvalds/linux)          | ~75000 с.    | ~33000 с.   | ~8000 с.     |
 | [FreeBSD](https://github.com/freebsd/freebsd-src.git)    | ~82000 с.    | ~36000 с.   | ~8500 с.     |
 | Минимальное разрешение                                   | 1200х600 dpi | 1200 dpi    | 2400 dpi     |
-| Лупа для чтения                                          | &gt; 7x      | &gt; 10x    | &gt; 20x     |
+| Лупа для контроля качества                               | &gt; 7x      | &gt; 10x    | &gt; 20x     |
