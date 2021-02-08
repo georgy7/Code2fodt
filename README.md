@@ -16,16 +16,17 @@
   * Git
   * File (реализация, поддерживающая `--mime-encoding`)
   * OpenOffice / LibreOffice
-  * Можно валидировать сгенерированный XML с&nbsp;помощью xmlstarlet:
-    ```
-    sudo apt-get install xmlstarlet
-    xmlstarlet val out.fodt
-    ```
-  * В случае, если файл не&nbsp;читается, можно найти конкретные ошибки в&nbsp;XML.
-    ```
-    sudo apt-get install libxml2-utils
-    xmllint out.fodt
-    ```
+  * В случае возникновения проблем:
+    * Можно валидировать сгенерированный XML с&nbsp;помощью xmlstarlet:
+      ```
+      sudo apt-get install xmlstarlet
+      xmlstarlet val out.fodt
+      ```
+    * Или найти конкретные ошибки в&nbsp;XML:
+      ```
+      sudo apt-get install libxml2-utils
+      xmllint out.fodt
+      ```
   * Можно использовать AbiWord для распечатки больших документов,
     с&nbsp;которыми OpenOffice не&nbsp;справляется.
     Abiword поддерживает ODT. Вот так можно сконвертировать FODT в ODT:
@@ -33,11 +34,13 @@
     libreoffice --headless --convert-to odt out.fodt
     ```
     Эта операция медленная и&nbsp;жадная до&nbsp;оперативной памяти.
-    Еще в&nbsp;AbiWord может немного отличаться форматирование.
+    В&nbsp;AbiWord может немного отличаться форматирование.
     Чтобы распечатывать напрямую из&nbsp;OpenOffice, можно
     разбить вывод на&nbsp;большее количество томов параметром `--volume-loc-threshold`
     (число строк в&nbsp;одном томе).
-    Нумерация страниц в&nbsp;каждом томе начинается с&nbsp;единицы.
+    Важный момент: нумерация страниц в&nbsp;каждом томе начинается с&nbsp;единицы.
+    Меня же вполне устраивает AbiWord: 64-битная версия
+    вполне способна открывать документы из&nbsp;полумиллиона–миллиона строк.
 * Надежный носитель. Например:
   * [Бескислотная бумага ♾](https://en.wikipedia.org/wiki/Acid-free_paper) из&nbsp;древесного сырья&nbsp;—
   после полного намокания,
